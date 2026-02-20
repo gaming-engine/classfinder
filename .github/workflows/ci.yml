@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  ci:
+    name: "${{ matrix.tool }}"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        tool: [pint, phpstan, pest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          coverage: ${{ matrix.tool == 'pest' && 'pcov' || 'none' }}
+      - run: composer install --no-interaction --prefer-dist
+      - if: matrix.tool == 'pint'
+        run: vendor/bin/pint --test
+      - if: matrix.tool == 'phpstan'
+        run: vendor/bin/phpstan analyse
+      - if: matrix.tool == 'pest'
+        run: vendor/bin/pest --coverage --min=80 --coverage-clover=coverage.xml
